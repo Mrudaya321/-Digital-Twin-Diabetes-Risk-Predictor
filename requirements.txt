@@ -1,8 +1,6 @@
 streamlit
 pandas
 numpy
-scikit-learn
+scikit-learn==1.7.1
 joblib
-tensorflow
-bcrypt
 cryptography
