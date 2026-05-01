@@ -349,7 +349,7 @@ with st.sidebar:
     bmi = st.slider("⚖ BMI", 10.0, 60.0, 27.0)
     hba1c = st.slider("🧪 HbA1c Level", 3.0, 15.0, 6.0)
     glucose = st.slider("🩸 Blood Glucose", 50.0, 400.0, 120.0)
-    smoking = st.selectbox("🚬 Smoking History", ["never", "former", "current", "unknown"])
+    smoking = st.selectbox("🚬 Smoking History", ["never", "No Info", "former", "current", "not current", "ever"])
 
     predict = st.button("🔍 Predict Risk")
 
@@ -373,22 +373,31 @@ with st.sidebar:
 
 
 # ---------- PREPARE INPUT ----------
+# Mapping must match how training data was encoded
+SMOKING_MAP = {
+    "No Info": 0,
+    "current": 1,
+    "ever": 2,
+    "former": 3,
+    "never": 4,
+    "not current": 5,
+}
+
 def prepare_input():
     g = 1 if gender == "Male" else 0
     hyper = 1 if hypertension == "Yes" else 0
     heart = 1 if heart_disease == "Yes" else 0
+    smoking_encoded = SMOKING_MAP.get(smoking, 4)  # default to 'never'
 
     row = pd.DataFrame([{
         "gender": g,
-        "age": age,
+        "age": float(age),
         "hypertension": hyper,
         "heart_disease": heart,
-        "bmi": bmi,
-        "HbA1c_level": hba1c,
-        "blood_glucose_level": glucose,
-        "smoking_history_current": 1 if smoking == "current" else 0,
-        "smoking_history_former": 1 if smoking == "former" else 0,
-        "smoking_history_unknown": 1 if smoking == "unknown" else 0
+        "smoking_history": smoking_encoded,
+        "bmi": float(bmi),
+        "HbA1c_level": float(hba1c),
+        "blood_glucose_level": float(glucose),
     }])
     return row
 
@@ -408,9 +417,8 @@ if predict:
     df_raw = prepare_input()
     df_scaled = df_raw.copy()
 
-    df_scaled[['age', 'bmi', 'HbA1c_level', 'blood_glucose_level']] = scaler.transform(
-        df_scaled[['age', 'bmi', 'HbA1c_level', 'blood_glucose_level']]
-    )
+    num_cols = ['age', 'bmi', 'HbA1c_level', 'blood_glucose_level']
+    df_scaled[num_cols] = scaler.transform(df_scaled[num_cols])
 
     # probability of positive class
     try:
