@@ -123,6 +123,11 @@ def load_original_training_data() -> pd.DataFrame:
     Load original diabetes dataset used for training.
     """
     df = pd.read_csv(ORIGINAL_DATA_PATH)
+    # Preprocess to match the expected 10 features
+    df['gender'] = df['gender'].map({'Female': 0, 'Male': 1, 'Other': 2})
+    df['smoking_history'] = df['smoking_history'].map({'No Info': 0, 'current': 1, 'ever': 2, 'former': 3, 'never': 4, 'not current': 5})
+    # Fill any NaNs if necessary or drop them
+    df = df.dropna()
     return df
 
 
@@ -181,8 +186,13 @@ def retrain_model_and_save(
 
     # New scaler for retrained model
     scaler_new = StandardScaler()
-    X_train_scaled = scaler_new.fit_transform(X_train)
-    X_val_scaled = scaler_new.transform(X_val)
+    num_cols = ['age', 'bmi', 'HbA1c_level', 'blood_glucose_level']
+    
+    X_train_scaled = X_train.copy()
+    X_val_scaled = X_val.copy()
+    
+    X_train_scaled[num_cols] = scaler_new.fit_transform(X_train[num_cols])
+    X_val_scaled[num_cols] = scaler_new.transform(X_val[num_cols])
 
     # Simple MLP — tune as needed
     model_new = MLPClassifier(
